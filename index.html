@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>To-Do Web App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    #todoForm {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    #taskInput, #dateInput, #timeInput {
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      font-size: 1em;
+      flex: 1 1 150px;
+    }
+
+    #addBtn {
+      background-color: #4caf50;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      padding: 10px 20px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    #addBtn:hover {
+      background-color: #45a049;
+    }
+
+    #taskList {
+      list-style: none;
+      padding: 0;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .task {
+      background: rgba(255, 255, 255, 0.15);
+      margin-bottom: 10px;
+      padding: 15px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .task.completed {
+      text-decoration: line-through;
+      opacity: 0.7;
+    }
+
+    .task-info {
+      flex: 1 1 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .task-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    button.control-btn {
+      background-color: transparent;
+      border: 2px solid #fff;
+      color: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+      padding: 5px 10px;
+      font-size: 0.9em;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    button.control-btn:hover {
+      background-color: #fff;
+      color: #333;
+    }
+
+    input.edit-input, input.edit-date, input.edit-time {
+      padding: 6px;
+      border-radius: 6px;
+      border: none;
+      font-size: 1em;
+      margin-top: 5px;
+      width: 100%;
+    }
+
+    .completed-label {
+      color: #00ff88;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    @media (max-width: 640px) {
+      #todoForm {
+        flex-direction: column;
+      }
+
+      .task {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .task-controls {
+        margin-left: 0;
+        margin-top: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>To-Do Web App</h1>
+
+  <form id="todoForm">
+    <input type="text" id="taskInput" placeholder="Enter new task" required />
+    <input type="date" id="dateInput" />
+    <input type="time" id="timeInput" />
+    <button type="submit" id="addBtn">Add Task</button>
+  </form>
+
+  <ul id="taskList"></ul>
+
+  <script>
+    const todoForm = document.getElementById('todoForm');
+    const taskInput = document.getElementById('taskInput');
+    const dateInput = document.getElementById('dateInput');
+    const timeInput = document.getElementById('timeInput');
+    const taskList = document.getElementById('taskList');
+
+    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+
+    function saveTasks() {
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+
+    function createTaskElement(task, index) {
+      const li = document.createElement('li');
+      li.className = 'task' + (task.completed ? ' completed' : '');
+
+      const infoDiv = document.createElement('div');
+      infoDiv.className = 'task-info';
+
+      const desc = document.createElement('div');
+      desc.textContent = task.description;
+      infoDiv.appendChild(desc);
+
+      const dateTime = document.createElement('small');
+      dateTime.textContent = `${task.date || ''} ${task.time || ''}`.trim();
+      if (dateTime.textContent.trim()) {
+        infoDiv.appendChild(dateTime);
+      }
+
+      const controlsDiv = document.createElement('div');
+      controlsDiv.className = 'task-controls';
+
+      const completeBtn = document.createElement('button');
+      completeBtn.textContent = task.completed ? 'Undo' : 'Complete';
+      completeBtn.className = 'control-btn';
+      completeBtn.addEventListener('click', () => {
+        tasks[index].completed = !tasks[index].completed;
+        saveTasks();
+        renderTasks();
+      });
+
+      const editBtn = document.createElement('button');
+      editBtn.textContent = 'Edit';
+      editBtn.className = 'control-btn';
+      editBtn.addEventListener('click', () => {
+        if (editBtn.textContent === 'Edit') {
+          desc.innerHTML = '';
+          dateTime.innerHTML = '';
+
+          const inputDesc = document.createElement('input');
+          inputDesc.type = 'text';
+          inputDesc.value = task.description;
+          inputDesc.className = 'edit-input';
+          desc.appendChild(inputDesc);
+
+          const inputDate = document.createElement('input');
+          inputDate.type = 'date';
+          inputDate.value = task.date;
+          inputDate.className = 'edit-date';
+          infoDiv.appendChild(inputDate);
+
+          const inputTime = document.createElement('input');
+          inputTime.type = 'time';
+          inputTime.value = task.time;
+          inputTime.className = 'edit-time';
+          infoDiv.appendChild(inputTime);
+
+          editBtn.textContent = 'Save';
+        } else {
+          const newDesc = desc.querySelector('input').value.trim();
+          const newDate = infoDiv.querySelector('.edit-date').value;
+          const newTime = infoDiv.querySelector('.edit-time').value;
+
+          if (newDesc) {
+            tasks[index].description = newDesc;
+            tasks[index].date = newDate;
+            tasks[index].time = newTime;
+            saveTasks();
+            renderTasks();
+          }
+        }
+      });
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.className = 'control-btn';
+      deleteBtn.addEventListener('click', () => {
+        tasks.splice(index, 1);
+        saveTasks();
+        renderTasks();
+      });
+
+      controlsDiv.appendChild(completeBtn);
+      controlsDiv.appendChild(editBtn);
+      controlsDiv.appendChild(deleteBtn);
+
+      if (task.completed) {
+        const completedLabel = document.createElement('span');
+        completedLabel.className = 'completed-label';
+        completedLabel.innerHTML = 'Completed ✅';
+        controlsDiv.appendChild(completedLabel);
+      }
+
+      li.appendChild(infoDiv);
+      li.appendChild(controlsDiv);
+
+      return li;
+    }
+
+    function renderTasks() {
+      taskList.innerHTML = '';
+      tasks.forEach((task, index) => {
+        taskList.appendChild(createTaskElement(task, index));
+      });
+    }
+
+    function isDuplicateTask(description) {
+      return tasks.some(task => task.description.toLowerCase() === description.toLowerCase());
+    }
+
+    function isFutureDateTime(date, time) {
+      if (!date || !time) return true; // Allow if not set
+      const selected = new Date(`${date}T${time}`);
+      return selected > new Date();
+    }
+
+    todoForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const description = taskInput.value.trim();
+      const date = dateInput.value;
+      const time = timeInput.value;
+
+      if (description === '') return alert('Please enter a task.');
+
+      if (isDuplicateTask(description)) {
+        return alert('This task already exists.');
+      }
+
+      if (!isFutureDateTime(date, time)) {
+        return alert('Please select a future date and time.');
+      }
+
+      const newTask = {
+        description,
+        date,
+        time,
+        completed: false,
+      };
+
+      tasks.push(newTask);
+      saveTasks();
+      renderTasks();
+      todoForm.reset();
+    });
+
+    renderTasks();
+  </script>
+
+</body>
+</html>
